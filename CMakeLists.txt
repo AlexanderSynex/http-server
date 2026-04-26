@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-set(PROJECT_NAME my_project)
+set(PROJECT_NAME http_server)
 
 project(${PROJECT_NAME})
 
@@ -25,10 +25,13 @@ message(STATUS "${PROJECT_NAME} version: ${PROJECT_VERSION}")
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_subdirectory(third-party)
 
-add_executable(client src/main.cpp)
+file(GLOB_RECURSE SOURCES src/*.cpp)
+
+add_executable(server ${SOURCES})
+target_include_directories(server PRIVATE include)
