@@ -6,9 +6,9 @@ COPY . /workdir
 WORKDIR /workdir 
 RUN mkdir -p build \
     && cd build \
-    && cmake -S .. -B . \
+    && cmake -S .. -B . -DCMAKE_BUILD_TYPE=Release \
     && cmake --build .
 
-FROM ubuntu:22.04
+FROM busybox:latest
 COPY --from=builder /workdir/build/server /usr/bin
 ENTRYPOINT [ "/usr/bin/server" ]

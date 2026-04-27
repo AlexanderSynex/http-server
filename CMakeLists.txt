@@ -35,3 +35,8 @@ file(GLOB_RECURSE SOURCES src/*.cpp)
 
 add_executable(server ${SOURCES})
 target_include_directories(server PRIVATE include)
+
+if (${CMAKE_BUILD_TYPE} STREQUAL "Release")
+  target_link_options(server PRIVATE "-static-libstdc++" "-static-libgcc")
+endif()
+
