@@ -6,11 +6,14 @@
 #include <cstring>
 #include <exception>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <memory>
 #include <mutex>
 #include <netinet/in.h>
 #include <shared_mutex>
+#include <sstream>
+#include <stdexcept>
 #include <stop_token>
 #include <string>
 #include <string_view>
@@ -21,20 +24,6 @@
 #include <unordered_map>
 
 using addr_t = sockaddr_in;
-
-struct SocketFile {
-  SocketFile(std::filesystem::path p) : file(p) {
-    if (std::filesystem::exists(p))
-      unlink(p.c_str());
-  };
-
-  virtual ~SocketFile() {
-    std::cout << "unlinking: " << file.c_str() << std::endl;
-    unlink(file.c_str());
-  }
-
-  std::filesystem::path file;
-};
 
 struct Connection {
   void close() {
@@ -51,6 +40,7 @@ template <typename Type> using ptr = std::unique_ptr<Type>;
 int main(int argc, const char *argv[]) {
   auto host = inet_addr("127.0.0.1");
   auto port = 8080;
+  std::filesystem::path root_page = "index.html";
 
   if (argc == 2) {
     auto addr = inet_addr(argv[1]);
@@ -70,6 +60,14 @@ int main(int argc, const char *argv[]) {
     }
   }
 
+  if (argc == 4) {
+    root_page = argv[3];
+  }
+
+  if (not std::filesystem::exists(root_page)) {
+    throw std::invalid_argument("No root page exists");
+  }
+
   std::stop_source ssource;
   std::shared_mutex m;
   constexpr std::size_t thread_limit = 1;
@@ -77,7 +75,8 @@ int main(int argc, const char *argv[]) {
   auto connections = std::unordered_map<std::thread::id, Connection>{};
   for (auto i = 0; i < thread_limit; ++i) {
     thread_pool[i] = std::make_unique<std::jthread>(
-        [&cons = connections, &m, id = i](std::stop_token stoken) {
+        [&cons = connections, &m, id = i,
+         home_page = root_page](std::stop_token stoken) {
           using namespace std::chrono_literals;
           {
             std::lock_guard l(m);
@@ -103,15 +102,15 @@ int main(int argc, const char *argv[]) {
               }
 
               auto message = std::string_view{buffer.data(), buffer.size()};
+              std::string header = {};
+              std::getline(std::stringstream{} << message, header);
 
-              auto page = std::string{"HTTP/1.1 200 OK\n"
-                                      "Content-Type: text/html\n\n"
-                                      "<!DOCTYPE html>\n"
-                                      "<html>\n"
-                                      "<h1>Its a server!</h1>\n"
-                                      "<button>Press me</button>"
-                                      "</html>\n"};
-              send(connection.socket, page.data(), page.size(), 0);
+              auto response = std::string{"HTTP/1.1 200 OK\n"
+                                          "Content-Type: text/html\n\n"};
+              response +=
+                  (std::stringstream{} << std::ifstream{home_page}.rdbuf())
+                      .str();
+              send(connection.socket, response.data(), response.size(), 0);
               connectionValid = false;
               {
                 std::lock_guard l(m);
@@ -129,7 +128,9 @@ int main(int argc, const char *argv[]) {
 
   if (bind(sock, reinterpret_cast<const struct sockaddr *>(&addr),
            sizeof(addr)) == -1) {
-    perror("Can not bind to address");
+    perror((std::string{} + "Can not bind to address " + argv[1] + ":" +
+            std::to_string(port))
+               .c_str());
     return 1;
   }
 

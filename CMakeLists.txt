@@ -31,7 +31,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_subdirectory(third-party)
 
-file(GLOB_RECURSE SOURCES src/*.cpp)
+file(GLOB_RECURSE SOURCES src/main.cpp)
 
 add_executable(server ${SOURCES})
 target_include_directories(server PRIVATE include)
