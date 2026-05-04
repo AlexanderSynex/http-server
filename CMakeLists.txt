@@ -31,9 +31,9 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_subdirectory(third-party)
 
-file(GLOB_RECURSE SOURCES src/main.cpp)
+file(GLOB_RECURSE SOURCES src/**/*.cpp)
 
-add_executable(server ${SOURCES})
+add_executable(server src/main.cpp ${SOURCES} ${TEMPLATE_SOURCES})
 target_include_directories(server PRIVATE include)
 
 if (${CMAKE_BUILD_TYPE} STREQUAL "Release")
