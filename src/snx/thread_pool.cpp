@@ -1,5 +1,4 @@
 #include "snx/thread_pool.hpp"
-#include "snx/logging/logger.hpp"
 #include <functional>
 #include <mutex>
 #include <stop_token>
@@ -38,5 +37,12 @@ void thread_pool::process_loop(std::stop_token stoken) {
       jobs.pop();
     }
     job();
+  }
+}
+
+void thread_pool::reset() {
+  for (auto &thread : workers) {
+    thread = std::jthread(
+        std::bind(&thread_pool::process_loop, this, stop_trigger.get_token()));
   }
 }

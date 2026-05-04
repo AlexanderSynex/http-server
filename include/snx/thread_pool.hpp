@@ -19,6 +19,8 @@ class thread_pool {
   template <typename Func, typename... Args>
   void attach(Func &&, Args &&...args);
 
+  void reset();
+
  protected:
   void process_loop(std::stop_token);
 
