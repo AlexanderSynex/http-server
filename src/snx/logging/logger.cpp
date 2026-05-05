@@ -9,7 +9,7 @@ using namespace snx::logging;
 
 TSLogger::TSLogger() {
   preamble =
-      std::format("[{:%d/%m/%YT%H:%M:%S}] ", std::chrono::system_clock::now());
+      std::format("[{:%d/%m/%YT%H:%M:%S}]", std::chrono::system_clock::now());
 }
 
 TSLogger::~TSLogger() {
