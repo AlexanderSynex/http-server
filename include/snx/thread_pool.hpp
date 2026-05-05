@@ -14,6 +14,10 @@ namespace snx {
 class thread_pool {
  public:
   explicit thread_pool(std::size_t N);
+  thread_pool(const thread_pool&) = delete;
+  thread_pool(thread_pool&&) = delete;
+  thread_pool& operator=(const thread_pool&) = delete;
+  thread_pool& operator=(thread_pool&&) = delete;
   ~thread_pool();
 
   template <typename Func, typename... Args>
