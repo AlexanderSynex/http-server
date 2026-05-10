@@ -23,17 +23,16 @@ thread_pool::~thread_pool() {
 }
 
 void thread_pool::process_loop(std::stop_token stoken) {
-  auto job = std::function<void()>{};
+  callback_type job;
   for (; not stoken.stop_requested();) {
     {
       std::unique_lock l(m);
-      job_trigger.wait(l, stoken,
+      job_trigger.wait(l,
                        [&jobs = jobs]() -> bool { return not jobs.empty(); });
       if (stoken.stop_requested() and jobs.empty()) {
         return;
       }
-
-      job = jobs.front();
+      job = std::move(jobs.front());
       jobs.pop();
     }
     job();
