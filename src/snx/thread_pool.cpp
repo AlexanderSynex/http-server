@@ -27,8 +27,9 @@ void thread_pool::process_loop(std::stop_token stoken) {
   for (; not stoken.stop_requested();) {
     {
       std::unique_lock l(m);
-      job_trigger.wait(l,
-                       [&jobs = jobs]() -> bool { return not jobs.empty(); });
+      job_trigger.wait(l, [&jobs = jobs, &stoken]() -> bool {
+        return not jobs.empty() or stoken.stop_requested();
+      });
       if (stoken.stop_requested() and jobs.empty()) {
         return;
       }
