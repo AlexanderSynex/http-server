@@ -16,7 +16,12 @@ struct info_t {
   constexpr static std::string_view type = "INFO";
 };
 
+struct debug_t {
+  constexpr static std::string_view type = "DEBUG";
+};
+
 constexpr auto info = info_t{};
+constexpr auto debug = debug_t{};
 constexpr auto warning = warning_t{};
 constexpr auto error = error_t{};
 
