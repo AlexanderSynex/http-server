@@ -44,7 +44,7 @@ void snx::thread_pool::attach(Func &&job, Args &&...args) {
   {
     std::lock_guard l(m);
     jobs.push([functor = std::forward<Func>(job),
-               ... args = std::forward<Args>(args)]() {
+               ... args = std::forward<Args>(args)]() mutable {
       functor(std::forward<Args>(args)...);
     });
   }
