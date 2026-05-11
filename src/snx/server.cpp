@@ -101,7 +101,7 @@ void snx::net::server::scheduling_task(std::stop_token stoken) {
 }
 
 void snx::net::server::connection_handler(
-    std::unique_ptr<connection> connection) {
+    std::unique_ptr<internal_connection_t> connection) {
   std::array<char, 512> buffer;
   std::string request = {};
   for (auto bytes = 0;

@@ -16,7 +16,7 @@ class server {
  public:
   static constexpr auto max_connections = 1024;
   using connection_type = connection_traits::network_connection;
-  using connection = connection<connection_type>;
+  using internal_connection_t = connection<connection_type>;
 
   server(std::string_view host, std::size_t port,
          std::size_t threads = std::thread::hardware_concurrency() - 1);
@@ -30,10 +30,10 @@ class server {
 
  private:
   void scheduling_task(std::stop_token stoken);
-  void connection_handler(std::unique_ptr<connection> connection);
+  void connection_handler(std::unique_ptr<internal_connection_t> connection);
 
  private:
-  connection gate;
+  internal_connection_t gate;
   std::stop_source ssrc;
   std::condition_variable stop_event;
   
