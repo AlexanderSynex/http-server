@@ -1,7 +1,9 @@
 #pragma once
 
+#include "snx/logging/levels.hpp"
 #include "snx/logging/logger.hpp"
-#include <stdexcept>
+#include <asm-generic/socket.h>
+#include <memory>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
@@ -19,17 +21,54 @@ template <class address_family> class connection {
   }
   connection(discriptor_type fd) : fd{fd} {
     if (fd < 0) {
-      logging::TSLogger{} << logging::levels::error << "Bad discriptor provided"
-                          << fd;
-      throw std::invalid_argument("Can not start connection");
+      return;
     }
-
-    logging::TSLogger{} << logging::levels::info << "Opened connection:" << fd
-                        << "fd";
+    constexpr auto enable = 1;
+    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR,
+               reinterpret_cast<const void *>(&enable), sizeof(enable));
+    setsockopt(fd, SOL_SOCKET, SO_REUSEPORT,
+               reinterpret_cast<const void *>(&enable), sizeof(enable));
+    setsockopt(fd, SOL_SOCKET, SOCK_NONBLOCK,
+               reinterpret_cast<const void *>(&enable), sizeof(enable));
   }
-  virtual ~connection() { close(fd); }
+
+  connection(connection &&other) : fd{other.fd}, address(other.address) {
+    other.fd = -1;
+    other.address = {0};
+  }
+
+  void close() {
+    logging::TSLogger{} << logging::levels::debug << "Closing connection" << fd;
+    address = {0};
+
+    if (fd == -1)
+      return;
+
+    ::close(fd);
+    fd = -1;
+  }
+
+  bool closed() const { return fd < 0; }
+
+  void set_nonblocking() {
+    constexpr auto enable = 1;
+    setsockopt(fd, SOL_SOCKET, SOCK_NONBLOCK,
+               reinterpret_cast<const void *>(&enable), sizeof(enable));
+  }
+
+  virtual ~connection() { close(); }
 
   operator discriptor_type() const { return fd; }
+
+  std::unique_ptr<connection<address_family>> get_caller() const {
+    address_type peer;
+    socklen_t size = sizeof(address_type);
+    auto fd = accept4(this->fd, reinterpret_cast<sockaddr *>(&peer), &size,
+                      SOCK_NONBLOCK);
+    auto newConnection = std::make_unique<connection<address_family>>(fd);
+    newConnection->address = std::move(peer);
+    return std::move(newConnection);
+  }
 
  private:
   connection(int domain, int type) : connection{socket(domain, type, 0)} {}
